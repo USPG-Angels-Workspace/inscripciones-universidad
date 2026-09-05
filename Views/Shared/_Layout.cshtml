@@ -1,0 +1,46 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>@ViewData["Title"] - Inscripciones Universidad</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link rel="stylesheet" href="~/css/site.css" asp-append-version="true" />
+</head>
+<body class="min-h-screen bg-slate-50 text-slate-800 flex flex-col">
+    <header class="bg-white border-b border-slate-200 shadow-sm">
+        <nav class="max-w-6xl mx-auto px-4 py-3 flex flex-wrap items-center justify-between gap-3">
+            <a class="text-lg font-semibold text-indigo-700" asp-area="" asp-controller="Home" asp-action="Index">
+                Inscripciones Universidad
+            </a>
+            <ul class="flex flex-wrap items-center gap-1 text-sm font-medium">
+                <li><a class="px-3 py-2 rounded-md hover:bg-indigo-50 hover:text-indigo-700" asp-controller="Home" asp-action="Index">Inicio</a></li>
+                <li><a class="px-3 py-2 rounded-md hover:bg-indigo-50 hover:text-indigo-700" asp-controller="Carreras" asp-action="Index">Carreras</a></li>
+                <li><a class="px-3 py-2 rounded-md hover:bg-indigo-50 hover:text-indigo-700" asp-controller="Cursos" asp-action="Index">Cursos</a></li>
+                <li><a class="px-3 py-2 rounded-md hover:bg-indigo-50 hover:text-indigo-700" asp-controller="Periodos" asp-action="Index">Períodos</a></li>
+                <li><a class="px-3 py-2 rounded-md hover:bg-indigo-50 hover:text-indigo-700" asp-controller="Estudiantes" asp-action="Index">Estudiantes</a></li>
+                <li><a class="px-3 py-2 rounded-md hover:bg-indigo-50 hover:text-indigo-700" asp-controller="Inscripciones" asp-action="Index">Inscripciones</a></li>
+            </ul>
+        </nav>
+    </header>
+
+    <main class="flex-1 max-w-6xl w-full mx-auto px-4 py-8">
+        @if (TempData["Mensaje"] is string mensaje)
+        {
+            <div class="mb-6 rounded-md border border-emerald-200 bg-emerald-50 px-4 py-3 text-sm text-emerald-800">
+                @mensaje
+            </div>
+        }
+        @RenderBody()
+    </main>
+
+    <footer class="border-t border-slate-200 bg-white">
+        <div class="max-w-6xl mx-auto px-4 py-4 text-sm text-slate-500">
+            &copy; 2026 - Inscripciones Universidad - Programación II
+        </div>
+    </footer>
+    <script src="~/lib/jquery/dist/jquery.min.js"></script>
+    <script src="~/js/site.js" asp-append-version="true"></script>
+    @await RenderSectionAsync("Scripts", required: false)
+</body>
+</html>
