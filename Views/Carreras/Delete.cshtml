@@ -1,0 +1,26 @@
+@model Carrera
+@{
+    ViewData["Title"] = "Eliminar carrera";
+}
+
+<h1 class="text-2xl font-bold text-slate-900 mb-6">Eliminar carrera</h1>
+
+<div class="max-w-lg rounded-lg border border-rose-200 bg-rose-50 p-6">
+    <p class="text-rose-700">¿Confirma que desea eliminar la siguiente carrera?</p>
+    <dl class="mt-4 divide-y divide-rose-100">
+        <div class="py-2 grid grid-cols-3 gap-4">
+            <dt class="text-slate-500">@Html.DisplayNameFor(m => m.Codigo)</dt>
+            <dd class="col-span-2 text-slate-800">@Model.Codigo</dd>
+        </div>
+        <div class="py-2 grid grid-cols-3 gap-4">
+            <dt class="text-slate-500">@Html.DisplayNameFor(m => m.Nombre)</dt>
+            <dd class="col-span-2 text-slate-800">@Model.Nombre</dd>
+        </div>
+    </dl>
+
+    <form asp-action="Delete" method="post" class="mt-6 flex gap-3">
+        <input type="hidden" asp-for="Id" />
+        <button type="submit" class="rounded-md bg-rose-600 px-4 py-2 text-sm font-medium text-white hover:bg-rose-700">Eliminar</button>
+        <a asp-action="Index" class="rounded-md border border-slate-300 px-4 py-2 text-sm font-medium text-slate-700 hover:bg-slate-50">Cancelar</a>
+    </form>
+</div>

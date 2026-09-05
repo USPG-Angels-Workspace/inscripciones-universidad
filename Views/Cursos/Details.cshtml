@@ -1,0 +1,36 @@
+@model Curso
+@{
+    ViewData["Title"] = "Detalle de curso";
+}
+
+<h1 class="text-2xl font-bold text-slate-900 mb-6">@Model.Nombre</h1>
+
+<div class="rounded-lg border border-slate-200 bg-white p-6 shadow-sm max-w-xl">
+    <dl class="divide-y divide-slate-100">
+        <div class="py-3 grid grid-cols-3 gap-4">
+            <dt class="text-slate-500">@Html.DisplayNameFor(m => m.Codigo)</dt>
+            <dd class="col-span-2 text-slate-800">@Model.Codigo</dd>
+        </div>
+        <div class="py-3 grid grid-cols-3 gap-4">
+            <dt class="text-slate-500">@Html.DisplayNameFor(m => m.Nombre)</dt>
+            <dd class="col-span-2 text-slate-800">@Model.Nombre</dd>
+        </div>
+        <div class="py-3 grid grid-cols-3 gap-4">
+            <dt class="text-slate-500">Carrera</dt>
+            <dd class="col-span-2 text-slate-800">@Model.Carrera?.Nombre</dd>
+        </div>
+        <div class="py-3 grid grid-cols-3 gap-4">
+            <dt class="text-slate-500">@Html.DisplayNameFor(m => m.Creditos)</dt>
+            <dd class="col-span-2 text-slate-800">@Model.Creditos</dd>
+        </div>
+        <div class="py-3 grid grid-cols-3 gap-4">
+            <dt class="text-slate-500">@Html.DisplayNameFor(m => m.CupoMaximo)</dt>
+            <dd class="col-span-2 text-slate-800">@Model.CupoMaximo</dd>
+        </div>
+    </dl>
+</div>
+
+<div class="mt-6 flex gap-3">
+    <a asp-action="Edit" asp-route-id="@Model.Id" class="rounded-md bg-amber-500 px-4 py-2 text-sm font-medium text-white hover:bg-amber-600">Editar</a>
+    <a asp-action="Index" class="rounded-md border border-slate-300 px-4 py-2 text-sm font-medium text-slate-700 hover:bg-slate-50">Volver</a>
+</div>

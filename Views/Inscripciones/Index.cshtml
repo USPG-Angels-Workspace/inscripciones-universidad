@@ -1,0 +1,56 @@
+@model IEnumerable<Inscripcion>
+@{
+    ViewData["Title"] = "Inscripciones";
+}
+
+<div class="flex items-center justify-between mb-6">
+    <h1 class="text-2xl font-bold text-slate-900">Inscripciones</h1>
+    <a asp-action="Create" class="rounded-md bg-indigo-600 px-4 py-2 text-sm font-medium text-white hover:bg-indigo-700">
+        Nueva inscripción
+    </a>
+</div>
+
+<div class="overflow-x-auto rounded-lg border border-slate-200 bg-white shadow-sm">
+    <table class="min-w-full divide-y divide-slate-200 text-sm">
+        <thead class="bg-slate-50">
+            <tr>
+                <th class="px-4 py-3 text-left font-semibold text-slate-600">Estudiante</th>
+                <th class="px-4 py-3 text-left font-semibold text-slate-600">Curso</th>
+                <th class="px-4 py-3 text-left font-semibold text-slate-600">Período</th>
+                <th class="px-4 py-3 text-left font-semibold text-slate-600">@Html.DisplayNameFor(m => m.FechaInscripcion)</th>
+                <th class="px-4 py-3 text-left font-semibold text-slate-600">@Html.DisplayNameFor(m => m.Estado)</th>
+                <th class="px-4 py-3 text-right font-semibold text-slate-600">Acciones</th>
+            </tr>
+        </thead>
+        <tbody class="divide-y divide-slate-100">
+            @foreach (var item in Model)
+            {
+                <tr class="hover:bg-slate-50">
+                    <td class="px-4 py-3 font-medium text-slate-700">@item.Estudiante?.NombreCompleto</td>
+                    <td class="px-4 py-3">@item.Curso?.Nombre</td>
+                    <td class="px-4 py-3">@item.Periodo?.Nombre</td>
+                    <td class="px-4 py-3">@item.FechaInscripcion.ToShortDateString()</td>
+                    <td class="px-4 py-3">
+                        @if (item.Estado == EstadoInscripcion.Activa)
+                        {
+                            <span class="rounded-full bg-emerald-100 px-2 py-1 text-xs font-medium text-emerald-700">Activa</span>
+                        }
+                        else
+                        {
+                            <span class="rounded-full bg-slate-100 px-2 py-1 text-xs font-medium text-slate-500">Anulada</span>
+                        }
+                    </td>
+                    <td class="px-4 py-3 text-right space-x-3">
+                        <a asp-action="Details" asp-route-id="@item.Id" class="text-indigo-600 hover:underline">Ver</a>
+                        <a asp-action="Edit" asp-route-id="@item.Id" class="text-amber-600 hover:underline">Editar</a>
+                        <a asp-action="Delete" asp-route-id="@item.Id" class="text-rose-600 hover:underline">Eliminar</a>
+                    </td>
+                </tr>
+            }
+            @if (!Model.Any())
+            {
+                <tr><td colspan="6" class="px-4 py-6 text-center text-slate-400">No hay inscripciones registradas.</td></tr>
+            }
+        </tbody>
+    </table>
+</div>
