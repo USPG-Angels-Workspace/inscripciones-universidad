@@ -7,7 +7,7 @@ cupo máximo por curso y evitando inscripciones duplicadas.
 ## Tecnologías
 
 - ASP.NET Core MVC (.NET 10)
-- Entity Framework Core con SQLite
+- Persistencia en archivo JSON (`App_Data/database.json`)
 - Tailwind CSS (vía CDN)
 
 ## Ejecutar el proyecto
@@ -17,8 +17,8 @@ dotnet restore
 dotnet run
 ```
 
-Las migraciones de la base de datos se aplican automáticamente al iniciar
-la aplicación.
+Los datos se guardan en `App_Data/database.json`, que se crea
+automáticamente al registrar el primer dato si aún no existe.
 
 ## Documentación
 
