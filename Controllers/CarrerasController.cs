@@ -1,5 +1,4 @@
 using Microsoft.AspNetCore.Mvc;
-using Microsoft.EntityFrameworkCore;
 using InscripcionesUniversidad.Data;
 using InscripcionesUniversidad.Models;
 
@@ -7,30 +6,24 @@ namespace InscripcionesUniversidad.Controllers;
 
 public class CarrerasController : Controller
 {
-    private readonly ApplicationDbContext _context;
+    private readonly JsonDataStore _store;
 
-    public CarrerasController(ApplicationDbContext context)
+    public CarrerasController(JsonDataStore store)
     {
-        _context = context;
+        _store = store;
     }
 
-    public async Task<IActionResult> Index()
+    public IActionResult Index()
     {
-        var carreras = await _context.Carreras
-            .OrderBy(c => c.Nombre)
-            .ToListAsync();
+        var carreras = _store.Carreras.OrderBy(c => c.Nombre).ToList();
         return View(carreras);
     }
 
-    public async Task<IActionResult> Details(int? id)
+    public IActionResult Details(int? id)
     {
         if (id is null) return NotFound();
 
-        var carrera = await _context.Carreras
-            .Include(c => c.Cursos)
-            .Include(c => c.Estudiantes)
-            .FirstOrDefaultAsync(c => c.Id == id);
-
+        var carrera = _store.Carreras.FirstOrDefault(c => c.Id == id);
         if (carrera is null) return NotFound();
 
         return View(carrera);
@@ -43,26 +36,28 @@ public class CarrerasController : Controller
 
     [HttpPost]
     [ValidateAntiForgeryToken]
-    public async Task<IActionResult> Create([Bind("Nombre,Codigo")] Carrera carrera)
+    public IActionResult Create([Bind("Nombre,Codigo")] Carrera carrera)
     {
-        if (await _context.Carreras.AnyAsync(c => c.Codigo == carrera.Codigo))
+        if (_store.Carreras.Any(c => c.Codigo == carrera.Codigo))
         {
             ModelState.AddModelError(nameof(Carrera.Codigo), "Ya existe una carrera con ese código");
         }
 
         if (!ModelState.IsValid) return View(carrera);
 
-        _context.Add(carrera);
-        await _context.SaveChangesAsync();
+        carrera.Id = JsonDataStore.SiguienteId(_store.Carreras.Select(c => c.Id));
+        _store.Carreras.Add(carrera);
+        _store.GuardarCambios();
+
         TempData["Mensaje"] = $"Carrera \"{carrera.Nombre}\" creada correctamente.";
         return RedirectToAction(nameof(Index));
     }
 
-    public async Task<IActionResult> Edit(int? id)
+    public IActionResult Edit(int? id)
     {
         if (id is null) return NotFound();
 
-        var carrera = await _context.Carreras.FindAsync(id);
+        var carrera = _store.Carreras.FirstOrDefault(c => c.Id == id);
         if (carrera is null) return NotFound();
 
         return View(carrera);
@@ -70,37 +65,33 @@ public class CarrerasController : Controller
 
     [HttpPost]
     [ValidateAntiForgeryToken]
-    public async Task<IActionResult> Edit(int id, [Bind("Id,Nombre,Codigo")] Carrera carrera)
+    public IActionResult Edit(int id, [Bind("Id,Nombre,Codigo")] Carrera carrera)
     {
         if (id != carrera.Id) return NotFound();
 
-        if (await _context.Carreras.AnyAsync(c => c.Codigo == carrera.Codigo && c.Id != carrera.Id))
+        if (_store.Carreras.Any(c => c.Codigo == carrera.Codigo && c.Id != carrera.Id))
         {
             ModelState.AddModelError(nameof(Carrera.Codigo), "Ya existe una carrera con ese código");
         }
 
         if (!ModelState.IsValid) return View(carrera);
 
-        try
-        {
-            _context.Update(carrera);
-            await _context.SaveChangesAsync();
-        }
-        catch (DbUpdateConcurrencyException)
-        {
-            if (!await _context.Carreras.AnyAsync(c => c.Id == id)) return NotFound();
-            throw;
-        }
+        var existente = _store.Carreras.FirstOrDefault(c => c.Id == id);
+        if (existente is null) return NotFound();
+
+        existente.Nombre = carrera.Nombre;
+        existente.Codigo = carrera.Codigo;
+        _store.GuardarCambios();
 
         TempData["Mensaje"] = $"Carrera \"{carrera.Nombre}\" actualizada correctamente.";
         return RedirectToAction(nameof(Index));
     }
 
-    public async Task<IActionResult> Delete(int? id)
+    public IActionResult Delete(int? id)
     {
         if (id is null) return NotFound();
 
-        var carrera = await _context.Carreras.FirstOrDefaultAsync(c => c.Id == id);
+        var carrera = _store.Carreras.FirstOrDefault(c => c.Id == id);
         if (carrera is null) return NotFound();
 
         return View(carrera);
@@ -108,13 +99,13 @@ public class CarrerasController : Controller
 
     [HttpPost, ActionName("Delete")]
     [ValidateAntiForgeryToken]
-    public async Task<IActionResult> DeleteConfirmed(int id)
+    public IActionResult DeleteConfirmed(int id)
     {
-        var carrera = await _context.Carreras.FindAsync(id);
+        var carrera = _store.Carreras.FirstOrDefault(c => c.Id == id);
         if (carrera is not null)
         {
-            var tieneCursos = await _context.Cursos.AnyAsync(c => c.CarreraId == id);
-            var tieneEstudiantes = await _context.Estudiantes.AnyAsync(e => e.CarreraId == id);
+            var tieneCursos = _store.Cursos.Any(c => c.CarreraId == id);
+            var tieneEstudiantes = _store.Estudiantes.Any(e => e.CarreraId == id);
 
             if (tieneCursos || tieneEstudiantes)
             {
@@ -122,8 +113,8 @@ public class CarrerasController : Controller
                 return RedirectToAction(nameof(Index));
             }
 
-            _context.Carreras.Remove(carrera);
-            await _context.SaveChangesAsync();
+            _store.Carreras.Remove(carrera);
+            _store.GuardarCambios();
             TempData["Mensaje"] = "Carrera eliminada correctamente.";
         }
 

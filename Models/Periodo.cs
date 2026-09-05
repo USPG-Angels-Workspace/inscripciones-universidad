@@ -1,4 +1,5 @@
 using System.ComponentModel.DataAnnotations;
+using System.Text.Json.Serialization;
 
 namespace InscripcionesUniversidad.Models;
 
@@ -24,5 +25,6 @@ public class Periodo
     [Display(Name = "Activo")]
     public bool Activo { get; set; } = true;
 
+    [JsonIgnore]
     public ICollection<Inscripcion> Inscripciones { get; set; } = new List<Inscripcion>();
 }

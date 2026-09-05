@@ -1,6 +1,5 @@
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Mvc.Rendering;
-using Microsoft.EntityFrameworkCore;
 using InscripcionesUniversidad.Data;
 using InscripcionesUniversidad.Models;
 
@@ -8,113 +7,105 @@ namespace InscripcionesUniversidad.Controllers;
 
 public class CursosController : Controller
 {
-    private readonly ApplicationDbContext _context;
+    private readonly JsonDataStore _store;
 
-    public CursosController(ApplicationDbContext context)
+    public CursosController(JsonDataStore store)
     {
-        _context = context;
+        _store = store;
     }
 
-    public async Task<IActionResult> Index()
+    public IActionResult Index()
     {
-        var cursos = await _context.Cursos
-            .Include(c => c.Carrera)
-            .OrderBy(c => c.Nombre)
-            .ToListAsync();
+        var cursos = _store.Cursos.OrderBy(c => c.Nombre).ToList();
         return View(cursos);
     }
 
-    public async Task<IActionResult> Details(int? id)
+    public IActionResult Details(int? id)
     {
         if (id is null) return NotFound();
 
-        var curso = await _context.Cursos
-            .Include(c => c.Carrera)
-            .FirstOrDefaultAsync(c => c.Id == id);
-
+        var curso = _store.Cursos.FirstOrDefault(c => c.Id == id);
         if (curso is null) return NotFound();
 
         return View(curso);
     }
 
-    public async Task<IActionResult> Create()
+    public IActionResult Create()
     {
-        await CargarCarreras();
+        CargarCarreras();
         return View();
     }
 
     [HttpPost]
     [ValidateAntiForgeryToken]
-    public async Task<IActionResult> Create([Bind("Nombre,Codigo,Creditos,CupoMaximo,CarreraId")] Curso curso)
+    public IActionResult Create([Bind("Nombre,Codigo,Creditos,CupoMaximo,CarreraId")] Curso curso)
     {
-        if (await _context.Cursos.AnyAsync(c => c.Codigo == curso.Codigo))
+        if (_store.Cursos.Any(c => c.Codigo == curso.Codigo))
         {
             ModelState.AddModelError(nameof(Curso.Codigo), "Ya existe un curso con ese código");
         }
 
         if (!ModelState.IsValid)
         {
-            await CargarCarreras(curso.CarreraId);
+            CargarCarreras(curso.CarreraId);
             return View(curso);
         }
 
-        _context.Add(curso);
-        await _context.SaveChangesAsync();
+        curso.Id = JsonDataStore.SiguienteId(_store.Cursos.Select(c => c.Id));
+        _store.Cursos.Add(curso);
+        _store.GuardarCambios();
+
         TempData["Mensaje"] = $"Curso \"{curso.Nombre}\" creado correctamente.";
         return RedirectToAction(nameof(Index));
     }
 
-    public async Task<IActionResult> Edit(int? id)
+    public IActionResult Edit(int? id)
     {
         if (id is null) return NotFound();
 
-        var curso = await _context.Cursos.FindAsync(id);
+        var curso = _store.Cursos.FirstOrDefault(c => c.Id == id);
         if (curso is null) return NotFound();
 
-        await CargarCarreras(curso.CarreraId);
+        CargarCarreras(curso.CarreraId);
         return View(curso);
     }
 
     [HttpPost]
     [ValidateAntiForgeryToken]
-    public async Task<IActionResult> Edit(int id, [Bind("Id,Nombre,Codigo,Creditos,CupoMaximo,CarreraId")] Curso curso)
+    public IActionResult Edit(int id, [Bind("Id,Nombre,Codigo,Creditos,CupoMaximo,CarreraId")] Curso curso)
     {
         if (id != curso.Id) return NotFound();
 
-        if (await _context.Cursos.AnyAsync(c => c.Codigo == curso.Codigo && c.Id != curso.Id))
+        if (_store.Cursos.Any(c => c.Codigo == curso.Codigo && c.Id != curso.Id))
         {
             ModelState.AddModelError(nameof(Curso.Codigo), "Ya existe un curso con ese código");
         }
 
         if (!ModelState.IsValid)
         {
-            await CargarCarreras(curso.CarreraId);
+            CargarCarreras(curso.CarreraId);
             return View(curso);
         }
 
-        try
-        {
-            _context.Update(curso);
-            await _context.SaveChangesAsync();
-        }
-        catch (DbUpdateConcurrencyException)
-        {
-            if (!await _context.Cursos.AnyAsync(c => c.Id == id)) return NotFound();
-            throw;
-        }
+        var existente = _store.Cursos.FirstOrDefault(c => c.Id == id);
+        if (existente is null) return NotFound();
+
+        existente.Nombre = curso.Nombre;
+        existente.Codigo = curso.Codigo;
+        existente.Creditos = curso.Creditos;
+        existente.CupoMaximo = curso.CupoMaximo;
+        existente.CarreraId = curso.CarreraId;
+        _store.GuardarCambios();
 
         TempData["Mensaje"] = $"Curso \"{curso.Nombre}\" actualizado correctamente.";
         return RedirectToAction(nameof(Index));
     }
 
-    public async Task<IActionResult> Delete(int? id)
+    public IActionResult Delete(int? id)
     {
         if (id is null) return NotFound();
 
-        var curso = await _context.Cursos
-            .Include(c => c.Carrera)
-            .FirstOrDefaultAsync(c => c.Id == id);
-
+        var curso = _store.Cursos.FirstOrDefault(c => c.Id == id);
         if (curso is null) return NotFound();
 
         return View(curso);
@@ -122,29 +113,29 @@ public class CursosController : Controller
 
     [HttpPost, ActionName("Delete")]
     [ValidateAntiForgeryToken]
-    public async Task<IActionResult> DeleteConfirmed(int id)
+    public IActionResult DeleteConfirmed(int id)
     {
-        var curso = await _context.Cursos.FindAsync(id);
+        var curso = _store.Cursos.FirstOrDefault(c => c.Id == id);
         if (curso is not null)
         {
-            var tieneInscripciones = await _context.Inscripciones.AnyAsync(i => i.CursoId == id);
+            var tieneInscripciones = _store.Inscripciones.Any(i => i.CursoId == id);
             if (tieneInscripciones)
             {
                 TempData["Mensaje"] = "No se puede eliminar el curso porque tiene inscripciones asociadas.";
                 return RedirectToAction(nameof(Index));
             }
 
-            _context.Cursos.Remove(curso);
-            await _context.SaveChangesAsync();
+            _store.Cursos.Remove(curso);
+            _store.GuardarCambios();
             TempData["Mensaje"] = "Curso eliminado correctamente.";
         }
 
         return RedirectToAction(nameof(Index));
     }
 
-    private async Task CargarCarreras(int? carreraSeleccionada = null)
+    private void CargarCarreras(int? carreraSeleccionada = null)
     {
-        var carreras = await _context.Carreras.OrderBy(c => c.Nombre).ToListAsync();
+        var carreras = _store.Carreras.OrderBy(c => c.Nombre).ToList();
         ViewData["CarreraId"] = new SelectList(carreras, nameof(Carrera.Id), nameof(Carrera.Nombre), carreraSeleccionada);
     }
 }

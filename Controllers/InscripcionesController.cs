@@ -1,6 +1,5 @@
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Mvc.Rendering;
-using Microsoft.EntityFrameworkCore;
 using InscripcionesUniversidad.Data;
 using InscripcionesUniversidad.Models;
 
@@ -8,116 +7,103 @@ namespace InscripcionesUniversidad.Controllers;
 
 public class InscripcionesController : Controller
 {
-    private readonly ApplicationDbContext _context;
+    private readonly JsonDataStore _store;
 
-    public InscripcionesController(ApplicationDbContext context)
+    public InscripcionesController(JsonDataStore store)
     {
-        _context = context;
+        _store = store;
     }
 
-    public async Task<IActionResult> Index()
+    public IActionResult Index()
     {
-        var inscripciones = await _context.Inscripciones
-            .Include(i => i.Estudiante)
-            .Include(i => i.Curso)
-            .Include(i => i.Periodo)
+        var inscripciones = _store.Inscripciones
             .OrderByDescending(i => i.FechaInscripcion)
-            .ToListAsync();
+            .ToList();
         return View(inscripciones);
     }
 
-    public async Task<IActionResult> Details(int? id)
+    public IActionResult Details(int? id)
     {
         if (id is null) return NotFound();
 
-        var inscripcion = await _context.Inscripciones
-            .Include(i => i.Estudiante)
-            .Include(i => i.Curso)
-            .Include(i => i.Periodo)
-            .FirstOrDefaultAsync(i => i.Id == id);
-
+        var inscripcion = _store.Inscripciones.FirstOrDefault(i => i.Id == id);
         if (inscripcion is null) return NotFound();
 
         return View(inscripcion);
     }
 
-    public async Task<IActionResult> Create()
+    public IActionResult Create()
     {
-        await CargarListas();
+        CargarListas();
         return View();
     }
 
     [HttpPost]
     [ValidateAntiForgeryToken]
-    public async Task<IActionResult> Create([Bind("EstudianteId,CursoId,PeriodoId")] Inscripcion inscripcion)
+    public IActionResult Create([Bind("EstudianteId,CursoId,PeriodoId")] Inscripcion inscripcion)
     {
-        await ValidarReglasDeNegocio(inscripcion);
+        ValidarReglasDeNegocio(inscripcion);
 
         if (!ModelState.IsValid)
         {
-            await CargarListas(inscripcion.EstudianteId, inscripcion.CursoId, inscripcion.PeriodoId);
+            CargarListas(inscripcion.EstudianteId, inscripcion.CursoId, inscripcion.PeriodoId);
             return View(inscripcion);
         }
 
+        inscripcion.Id = JsonDataStore.SiguienteId(_store.Inscripciones.Select(i => i.Id));
         inscripcion.FechaInscripcion = DateTime.Now;
         inscripcion.Estado = EstadoInscripcion.Activa;
 
-        _context.Add(inscripcion);
-        await _context.SaveChangesAsync();
+        _store.Inscripciones.Add(inscripcion);
+        _store.GuardarCambios();
+
         TempData["Mensaje"] = "Inscripción registrada correctamente.";
         return RedirectToAction(nameof(Index));
     }
 
-    public async Task<IActionResult> Edit(int? id)
+    public IActionResult Edit(int? id)
     {
         if (id is null) return NotFound();
 
-        var inscripcion = await _context.Inscripciones.FindAsync(id);
+        var inscripcion = _store.Inscripciones.FirstOrDefault(i => i.Id == id);
         if (inscripcion is null) return NotFound();
 
-        await CargarListas(inscripcion.EstudianteId, inscripcion.CursoId, inscripcion.PeriodoId);
+        CargarListas(inscripcion.EstudianteId, inscripcion.CursoId, inscripcion.PeriodoId);
         return View(inscripcion);
     }
 
     [HttpPost]
     [ValidateAntiForgeryToken]
-    public async Task<IActionResult> Edit(int id, [Bind("Id,EstudianteId,CursoId,PeriodoId,FechaInscripcion,Estado")] Inscripcion inscripcion)
+    public IActionResult Edit(int id, [Bind("Id,EstudianteId,CursoId,PeriodoId,FechaInscripcion,Estado")] Inscripcion inscripcion)
     {
         if (id != inscripcion.Id) return NotFound();
 
-        await ValidarReglasDeNegocio(inscripcion, ignorarId: inscripcion.Id);
+        ValidarReglasDeNegocio(inscripcion, ignorarId: inscripcion.Id);
 
         if (!ModelState.IsValid)
         {
-            await CargarListas(inscripcion.EstudianteId, inscripcion.CursoId, inscripcion.PeriodoId);
+            CargarListas(inscripcion.EstudianteId, inscripcion.CursoId, inscripcion.PeriodoId);
             return View(inscripcion);
         }
 
-        try
-        {
-            _context.Update(inscripcion);
-            await _context.SaveChangesAsync();
-        }
-        catch (DbUpdateConcurrencyException)
-        {
-            if (!await _context.Inscripciones.AnyAsync(i => i.Id == id)) return NotFound();
-            throw;
-        }
+        var existente = _store.Inscripciones.FirstOrDefault(i => i.Id == id);
+        if (existente is null) return NotFound();
+
+        existente.EstudianteId = inscripcion.EstudianteId;
+        existente.CursoId = inscripcion.CursoId;
+        existente.PeriodoId = inscripcion.PeriodoId;
+        existente.Estado = inscripcion.Estado;
+        _store.GuardarCambios();
 
         TempData["Mensaje"] = "Inscripción actualizada correctamente.";
         return RedirectToAction(nameof(Index));
     }
 
-    public async Task<IActionResult> Delete(int? id)
+    public IActionResult Delete(int? id)
     {
         if (id is null) return NotFound();
 
-        var inscripcion = await _context.Inscripciones
-            .Include(i => i.Estudiante)
-            .Include(i => i.Curso)
-            .Include(i => i.Periodo)
-            .FirstOrDefaultAsync(i => i.Id == id);
-
+        var inscripcion = _store.Inscripciones.FirstOrDefault(i => i.Id == id);
         if (inscripcion is null) return NotFound();
 
         return View(inscripcion);
@@ -125,22 +111,22 @@ public class InscripcionesController : Controller
 
     [HttpPost, ActionName("Delete")]
     [ValidateAntiForgeryToken]
-    public async Task<IActionResult> DeleteConfirmed(int id)
+    public IActionResult DeleteConfirmed(int id)
     {
-        var inscripcion = await _context.Inscripciones.FindAsync(id);
+        var inscripcion = _store.Inscripciones.FirstOrDefault(i => i.Id == id);
         if (inscripcion is not null)
         {
-            _context.Inscripciones.Remove(inscripcion);
-            await _context.SaveChangesAsync();
+            _store.Inscripciones.Remove(inscripcion);
+            _store.GuardarCambios();
             TempData["Mensaje"] = "Inscripción eliminada correctamente.";
         }
 
         return RedirectToAction(nameof(Index));
     }
 
-    private async Task ValidarReglasDeNegocio(Inscripcion inscripcion, int? ignorarId = null)
+    private void ValidarReglasDeNegocio(Inscripcion inscripcion, int? ignorarId = null)
     {
-        var yaInscrito = await _context.Inscripciones.AnyAsync(i =>
+        var yaInscrito = _store.Inscripciones.Any(i =>
             i.Id != ignorarId &&
             i.EstudianteId == inscripcion.EstudianteId &&
             i.CursoId == inscripcion.CursoId &&
@@ -153,10 +139,10 @@ public class InscripcionesController : Controller
             return;
         }
 
-        var curso = await _context.Cursos.FindAsync(inscripcion.CursoId);
+        var curso = _store.Cursos.FirstOrDefault(c => c.Id == inscripcion.CursoId);
         if (curso is null) return;
 
-        var inscritosActivos = await _context.Inscripciones.CountAsync(i =>
+        var inscritosActivos = _store.Inscripciones.Count(i =>
             i.Id != ignorarId &&
             i.CursoId == inscripcion.CursoId &&
             i.PeriodoId == inscripcion.PeriodoId &&
@@ -168,11 +154,11 @@ public class InscripcionesController : Controller
         }
     }
 
-    private async Task CargarListas(int? estudianteSeleccionado = null, int? cursoSeleccionado = null, int? periodoSeleccionado = null)
+    private void CargarListas(int? estudianteSeleccionado = null, int? cursoSeleccionado = null, int? periodoSeleccionado = null)
     {
-        var estudiantes = await _context.Estudiantes.OrderBy(e => e.Apellidos).ThenBy(e => e.Nombres).ToListAsync();
-        var cursos = await _context.Cursos.OrderBy(c => c.Nombre).ToListAsync();
-        var periodos = await _context.Periodos.OrderByDescending(p => p.FechaInicio).ToListAsync();
+        var estudiantes = _store.Estudiantes.OrderBy(e => e.Apellidos).ThenBy(e => e.Nombres).ToList();
+        var cursos = _store.Cursos.OrderBy(c => c.Nombre).ToList();
+        var periodos = _store.Periodos.OrderByDescending(p => p.FechaInicio).ToList();
 
         ViewData["EstudianteId"] = new SelectList(
             estudiantes.Select(e => new { e.Id, NombreCompleto = $"{e.Carne} - {e.NombreCompleto}" }),

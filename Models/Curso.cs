@@ -1,5 +1,5 @@
 using System.ComponentModel.DataAnnotations;
-using System.ComponentModel.DataAnnotations.Schema;
+using System.Text.Json.Serialization;
 
 namespace InscripcionesUniversidad.Models;
 
@@ -29,8 +29,9 @@ public class Curso
     [Display(Name = "Carrera")]
     public int CarreraId { get; set; }
 
-    [ForeignKey(nameof(CarreraId))]
+    [JsonIgnore]
     public Carrera? Carrera { get; set; }
 
+    [JsonIgnore]
     public ICollection<Inscripcion> Inscripciones { get; set; } = new List<Inscripcion>();
 }

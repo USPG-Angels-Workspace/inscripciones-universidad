@@ -1,5 +1,5 @@
 using System.ComponentModel.DataAnnotations;
-using System.ComponentModel.DataAnnotations.Schema;
+using System.Text.Json.Serialization;
 
 namespace InscripcionesUniversidad.Models;
 
@@ -11,21 +11,21 @@ public class Inscripcion
     [Display(Name = "Estudiante")]
     public int EstudianteId { get; set; }
 
-    [ForeignKey(nameof(EstudianteId))]
+    [JsonIgnore]
     public Estudiante? Estudiante { get; set; }
 
     [Required]
     [Display(Name = "Curso")]
     public int CursoId { get; set; }
 
-    [ForeignKey(nameof(CursoId))]
+    [JsonIgnore]
     public Curso? Curso { get; set; }
 
     [Required]
     [Display(Name = "Período")]
     public int PeriodoId { get; set; }
 
-    [ForeignKey(nameof(PeriodoId))]
+    [JsonIgnore]
     public Periodo? Periodo { get; set; }
 
     [Display(Name = "Fecha de inscripción")]

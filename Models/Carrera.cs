@@ -1,4 +1,5 @@
 using System.ComponentModel.DataAnnotations;
+using System.Text.Json.Serialization;
 
 namespace InscripcionesUniversidad.Models;
 
@@ -16,7 +17,9 @@ public class Carrera
     [Display(Name = "Código")]
     public string Codigo { get; set; } = string.Empty;
 
+    [JsonIgnore]
     public ICollection<Curso> Cursos { get; set; } = new List<Curso>();
 
+    [JsonIgnore]
     public ICollection<Estudiante> Estudiantes { get; set; } = new List<Estudiante>();
 }
